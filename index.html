@@ -230,18 +230,20 @@ function render(){
   else if(view.page==='detail') m.innerHTML = detailView(view.id);
   else if(view.page==='loans') m.innerHTML = loansView();
   else if(view.page==='settings') m.innerHTML = settingsView();
+  else if(view.page==='statement') m.innerHTML = statementView(view.id);
 }
 function renderHeader(){
-  const titles={home:'Property Tracker',properties:'My Properties',detail:'Property Details',loans:'Loans & Borrowing',settings:'Settings'};
+  const titles={home:'Property Tracker',properties:'My Properties',detail:'Property Details',loans:'Loans & Borrowing',settings:'Settings',statement:'Account Statement'};
   let h = '';
   if(view.page==='detail') h += '<button class="back" onclick="go(\'properties\')">‹</button>';
+  if(view.page==='statement') h += '<button class="back" onclick="go(\'home\')">‹</button>';
   h += '<h1>'+titles[view.page]+'</h1>';
   document.getElementById('header').innerHTML = h;
 }
 function renderNav(){
   const items=[['home','Home'],['properties','Properties'],['loans','Loans'],['settings','Settings']];
   document.getElementById('nav').innerHTML = '<div class="brand">Property Tracker</div>' + items.map(([p,lb])=>
-    '<button class="'+((view.page===p||(p==='properties'&&view.page==='detail'))?'active':'')+'" onclick="go(\''+p+'\')"><span class="ic"></span>'+lb+'</button>'
+    '<button class="'+((view.page===p||(p==='properties'&&view.page==='detail')||(p==='home'&&view.page==='statement'))?'active':'')+'" onclick="go(\''+p+'\')"><span class="ic"></span>'+lb+'</button>'
   ).join('');
 }
 
@@ -264,17 +266,17 @@ function homeView(){
   const cashB=cashBalance(), bankB=bankTotal();
   let h = '<div class="card">'
     +'<div style="display:flex;gap:10px">'
-    +'<div style="flex:1"><div class="lbl" style="font-size:12px;color:var(--muted)">Cash in hand</div><div class="amount-big" style="color:'+(cashB<0?'var(--red)':'var(--green)')+'">'+fmt(cashB)+'</div></div>'
-    +'<div style="flex:1"><div class="lbl" style="font-size:12px;color:var(--muted)">Bank balance</div><div class="amount-big" style="color:'+(bankB<0?'var(--red)':'var(--green)')+'">'+fmt(bankB)+'</div></div>'
+    +'<div class="clickable" style="flex:1" onclick="go(\'statement\',\'cash\')"><div class="lbl" style="font-size:12px;color:var(--muted)">Cash in hand ›</div><div class="amount-big" style="color:'+(cashB<0?'var(--red)':'var(--green)')+'">'+fmt(cashB)+'</div></div>'
+    +'<div class="clickable" style="flex:1" onclick="go(\'statement\',\'all\')"><div class="lbl" style="font-size:12px;color:var(--muted)">Bank balance ›</div><div class="amount-big" style="color:'+(bankB<0?'var(--red)':'var(--green)')+'">'+fmt(bankB)+'</div></div>'
     +'</div>';
   if(db.banks.length){
     const un=bankUnassigned();
     h+='<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px">'
-      + db.banks.map(b=>'<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:var(--muted)">'+esc(bankLabel(b))+'</span><span style="font-weight:600;color:'+(bankAccBalance(b.id)<0?'var(--red)':'var(--text)')+'">'+fmt(bankAccBalance(b.id))+'</span></div>').join('')
+      + db.banks.map(b=>'<div class="clickable" style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0" onclick="go(\'statement\',\''+b.id+'\')"><span style="color:var(--muted)">'+esc(bankLabel(b))+' ›</span><span style="font-weight:600;color:'+(bankAccBalance(b.id)<0?'var(--red)':'var(--text)')+'">'+fmt(bankAccBalance(b.id))+'</span></div>').join('')
       +(un!==0?'<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:var(--muted)">Opening / unassigned</span><span style="font-weight:600">'+fmt(un)+'</span></div>':'')
       +'</div>';
   }
-  h+='<div style="font-size:11px;color:var(--muted);margin-top:8px">Set opening balances & bank accounts in Settings</div></div>';
+  h+='<div style="font-size:11px;color:var(--muted);margin-top:8px">Tap a balance to see its transaction record</div></div>';
   h += '<div class="grid2">'
     + stat('Properties', active.length+' active / '+sold.length+' sold','')
     + stat('Paid out so far', fmtC(totalInvested),'')
@@ -318,6 +320,44 @@ function fmtC(n){
   else if(a>=1e4) s=(n/1e3).toFixed(0)+'K';
   else s=new Intl.NumberFormat('en-US').format(Math.round(n));
   return s+' '+db.currency;
+}
+
+/* ---------- ACCOUNT STATEMENT ---------- */
+function allTx(){
+  const t=[];
+  db.loans.forEach(l=>{
+    t.push({date:l.date||'', amt:Number(l.amount)||0, ch:l.channel||'bank', desc:'Loan received from '+l.lender});
+    (l.repayments||[]).forEach(r=>t.push({date:r.date||'', amt:-(Number(r.amount)||0), ch:chan(r), desc:'Loan repayment to '+l.lender}));
+  });
+  db.properties.forEach(p=>{
+    (p.payments||[]).forEach(x=>t.push({date:x.date||'', amt:-(Number(x.amount)||0), ch:chan(x), desc:'Paid for '+p.name+(x.note?' ('+x.note+')':'')}));
+    if(p.sale) (p.sale.receipts||[]).forEach(x=>t.push({date:x.date||'', amt:Number(x.amount)||0, ch:chan(x), desc:'Received for '+p.name+(x.note?' ('+x.note+')':'')}));
+  });
+  t.sort((a,b)=>b.date.localeCompare(a.date));
+  return t;
+}
+function statementView(ch){
+  const isCash=ch==='cash', isAll=ch==='all';
+  const b=db.banks.find(x=>x.id===ch);
+  const title=isCash?'Cash in hand':isAll?'All bank accounts':(b?bankLabel(b):'Bank');
+  const bal=isCash?cashBalance():isAll?bankTotal():bankAccBalance(ch);
+  const opening=isCash?(Number(db.openCash)||0):isAll?((Number(db.openBank)||0)+sum(db.banks,x=>x.opening)):(b?Number(b.opening)||0:0);
+  const tx=allTx().filter(t=> isCash? t.ch==='cash' : isAll? t.ch!=='cash' : t.ch===ch);
+  let h='<div class="card"><div class="lbl" style="font-size:12px;color:var(--muted)">'+esc(title)+'</div>'
+    +'<div class="amount-big" style="color:'+(bal<0?'var(--red)':'var(--green)')+'">'+fmt(bal)+'</div>'
+    +(b&&b.holder?'<div class="muted" style="font-size:12px;margin-top:2px">'+esc(b.holder)+'</div>':'')
+    +'</div>';
+  if(!tx.length) return h+'<div class="empty">No transactions yet for this account.<br>Money moves here when you record payments, sales, loans or repayments.</div>';
+  let run=bal;
+  h+='<h2>Transactions ('+tx.length+')</h2><div class="card">';
+  h+=tx.map(t=>{
+    const r=run; run-=t.amt;
+    return '<div class="row"><div style="min-width:0"><div style="font-weight:600">'+esc(t.desc)+'</div><div class="sub">'+esc(t.date)+' · balance after: '+fmt(r)+'</div></div>'
+      +'<span style="font-weight:700;white-space:nowrap;color:'+(t.amt<0?'var(--red)':'var(--green)')+'">'+(t.amt<0?'−':'+')+fmt(Math.abs(t.amt))+'</span></div>';
+  }).join('');
+  h+='<div class="row"><div style="font-weight:600">Opening balance</div><span style="font-weight:700">'+fmt(opening)+'</span></div>';
+  h+='</div>';
+  return h;
 }
 
 /* ---------- PROPERTIES LIST ---------- */
