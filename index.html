@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Properties">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f2f2f2">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%233f3f3f'/%3E%3Cpath d='M90 40 L140 80 L140 135 L105 135 L105 105 L75 105 L75 135 L40 135 L40 80 Z' fill='white'/%3E%3C/svg%3E">
+<title>Property Tracker</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root{
+  --green:#15803d; --green2:#16a34a; --bg:#f2f2f2; --card:#ffffff;
+  --text:#171717; --muted:#737373; --red:#dc2626; --amber:#d97706;
+  --blue:#2563eb; --line:#ececec; --radius:12px; --btn:#3f3f3f;
+  --shadow:0 1px 4px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Helvetica Neue',Helvetica,Arial,'Noto Sans Myanmar',sans-serif;background:var(--bg);color:var(--text);font-size:15px;padding-bottom:80px;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;touch-action:manipulation}
+header{background:var(--bg);color:var(--text);padding:14px 16px;position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px}
+header h1{font-size:17px;font-weight:700;flex:1;letter-spacing:-.2px}
+header button{background:#f0f0f0;border:none;color:var(--text);padding:6px 12px;border-radius:8px;font-size:14px}
+main{padding:14px;max-width:560px;margin:0 auto}
+.card{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow)}
+.stat .lbl{font-size:12px;color:var(--muted);margin-bottom:4px}
+.stat .val{font-size:17px;font-weight:700}
+.mini{display:flex;gap:10px;margin-top:12px}
+.mini .m{flex:1;background:var(--card);border-radius:var(--radius);padding:10px 4px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.m .ic{font-size:20px}
+.m .v{font-weight:800;font-size:15px;margin-top:2px}
+.m .l{font-size:11px;color:var(--muted)}
+.tile{border-radius:var(--radius);padding:12px 14px;margin-top:10px;display:flex;align-items:center;gap:12px}
+.tile .ti{font-size:24px}
+.tile .tl{font-size:12px;opacity:.85}
+.tile .tv{font-size:18px;font-weight:800}
+.progress{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:6px}
+.progress>div{height:100%;background:var(--green2);border-radius:99px}
+.pos{color:var(--green2)} .neg{color:var(--red)} .warn{color:var(--amber)}
+h2{font-size:12px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+.row .sub{font-size:12px;color:var(--muted)}
+.badge{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;white-space:nowrap}
+.b-green{background:#dcfce7;color:#166534}.b-red{background:#fee2e2;color:#991b1b}
+.b-amber{background:#fef3c7;color:#92400e}.b-blue{background:#dbeafe;color:#1e40af}
+.b-gray{background:#e5e7eb;color:#374151}
+button.primary{background:var(--btn);color:#fff;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:600;width:100%;box-shadow:var(--shadow)}
+button.small{background:var(--btn);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;box-shadow:var(--shadow);min-height:36px}
+button.outline{background:#fff;color:var(--btn);border:none;box-shadow:var(--shadow)}
+button.danger{background:#fff;color:var(--red);border:none;box-shadow:var(--shadow)}
+.btnrow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btnrow button{flex:1;min-width:120px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;box-shadow:0 -1px 6px rgba(0,0,0,.07);display:flex;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:none;padding:11px 0 12px;font-size:14px;color:var(--muted);display:flex;flex-direction:column;align-items:center}
+nav button.active{color:var(--text);font-weight:700}
+nav .ic{display:block;width:18px;height:2px;background:currentColor;border-radius:2px;margin-bottom:5px;opacity:0}
+nav button.active .ic{opacity:1}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 16px calc(24px + env(safe-area-inset-bottom))}
+.modal::before{content:'';display:block;width:36px;height:4px;background:#ddd;border-radius:99px;margin:-6px auto 12px}
+.modal h3{font-size:16px;margin-bottom:14px;color:var(--text)}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-weight:600}
+input,select,textarea{width:100%;padding:12px;border:1.5px solid #ddd;border-radius:10px;font-size:16px;background:#fff;color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;min-height:46px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23737373' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+input:focus,select:focus{outline:none;border-color:var(--green2)}
+.partner-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.partner-row input:first-child{flex:1 1 100%}
+.partner-row input:nth-child(2){flex:1;min-width:90px}
+.partner-row select{flex:1.3;width:auto;min-width:110px;padding:8px}
+.partner-row button{background:none;border:none;color:var(--red);font-size:18px;padding:0 4px}
+.empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:14px}
+.back{background:none;border:none;color:var(--text);font-size:22px;padding:0 4px 0 0}
+.kv{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-weight:600;text-align:right}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px}
+.section-head h2{margin:0}
+.checkrow{display:flex;align-items:center;gap:8px;margin-top:10px}
+.checkrow input{width:auto}
+.amount-big{font-size:22px;font-weight:800}
+.muted{color:var(--muted);font-size:13px}
+.clickable{cursor:pointer}
+.brand{display:none}
+@media (min-width:900px){
+  body{padding-bottom:24px}
+  nav{top:0;bottom:0;left:0;right:auto;width:220px;flex-direction:column;justify-content:flex-start;box-shadow:1px 0 6px rgba(0,0,0,.06);padding:18px 0;gap:2px}
+  .brand{display:block;font-weight:800;font-size:17px;letter-spacing:-.3px;padding:6px 20px 22px;color:var(--text)}
+  nav button{flex:0 0 auto;flex-direction:row;justify-content:flex-start;gap:12px;padding:12px 20px;font-size:14px;width:100%;border-radius:0}
+  nav button.active{background:#f5f5f5}
+  nav .ic{width:3px;height:16px;margin-bottom:0}
+  header{margin-left:220px;padding:20px 32px 10px;position:static}
+  header h1{font-size:21px}
+  main{margin-left:220px;max-width:880px;padding:14px 32px 32px}
+  .grid2{grid-template-columns:repeat(3,1fr)}
+  .cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .cardgrid .card{margin-bottom:0}
+  .btnrow button{flex:0 1 auto;min-width:160px}
+  .modal-bg{align-items:center;padding:24px}
+  .modal{border-radius:18px;max-height:85vh;max-width:480px}
+  .modal::before{display:none}
+}
+</style>
+</head>
+<body>
+<header id="header"></header>
+<main id="main"></main>
+<nav id="nav"></nav>
+<div id="modalRoot"></div>
+
+<script>
+'use strict';
+/* ---------- storage ---------- */
+const KEY='propertyTrackerData_v1';
+let db = load();
+function load(){
+  let d=null;
+  try{ d = JSON.parse(localStorage.getItem(KEY)); }catch(e){}
+  if(!d || !d.properties) d = { currency:'MMK', properties:[], loans:[] };
+  if(!d.banks) d.banks=[];
+  if(!d.sync) d.sync={clientId:'',fileId:'',connected:false,lastSync:0};
+  return d;
+}
+function persist(){ localStorage.setItem(KEY, JSON.stringify(db)); }
+function save(){ db.updatedAt=Date.now(); persist(); queueSync(); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* ---------- helpers ---------- */
+function fmt(n){
+  n = Number(n)||0;
+  const s = new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(Math.round(n));
+  return s + ' ' + db.currency;
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function sum(arr,f){ return (arr||[]).reduce((t,x)=>t+(Number(f?f(x):x)||0),0); }
+
+/* property calculations */
+function paidAmt(p){ return sum(p.payments, x=>x.amount); }
+function shareF(p){
+  const price=Number(p.purchasePrice)||0;
+  if(!price) return 1;
+  return Math.max(0, Math.min(1, (price - partnersTotal(p))/price));
+}
+function myShare(p){ return Math.round(shareF(p)*1000)/10; }
+function myCost(p){ return (Number(p.purchasePrice)||0)*shareF(p); }
+function owedAmt(p){ return Math.max(0, myCost(p) - paidAmt(p)); }
+function buyComm(p){ return p.buyBroker && p.buyBroker.pct ? (Number(p.purchasePrice)||0)*Number(p.buyBroker.pct)/100 : 0; }
+function sellComm(p){
+  if(!p.sale || !p.sale.broker || !p.sale.broker.pct) return 0;
+  const b=p.sale.broker, pct=Number(b.pct)/100;
+  if(b.basis==='profit'){
+    const grossProfit=(Number(p.sale.price)||0)-(Number(p.purchasePrice)||0)-buyComm(p);
+    return Math.max(0,grossProfit)*pct;
+  }
+  return (Number(p.sale.price)||0)*pct;
+}
+function receivedAmt(p){ return p.sale ? sum(p.sale.receipts, x=>x.amount) : 0; }
+function mySaleAmt(p){ return p.sale ? (Number(p.sale.price)||0)*shareF(p) : 0; }
+function receivableAmt(p){ return p.sale ? Math.max(0, mySaleAmt(p) - receivedAmt(p)) : 0; }
+function profit(p){ return p.sale ? ((Number(p.sale.price)||0) - (Number(p.purchasePrice)||0) - buyComm(p) - sellComm(p))*shareF(p) : 0; }
+function loanRepaid(l){ return sum(l.repayments, x=>x.amount); }
+function loanOutstanding(l){ return Math.max(0,(Number(l.amount)||0) - loanRepaid(l)); }
+/* simple interest: amount × rate%/year × days/365, from start date until toDate (capped at end date) */
+function loanInterest(l, toDate){
+  const rate=Number(l.rate)||0;
+  if(!rate || !l.date) return 0;
+  let end = toDate || today();
+  if(l.endDate && l.endDate < end) end = l.endDate;
+  const days = (new Date(end) - new Date(l.date)) / 86400000;
+  if(days<=0) return 0;
+  return (Number(l.amount)||0) * rate/100 * days/365;
+}
+/* channel: 'cash', a bank account id, or legacy 'bank'. Inferred from method if missing */
+function chan(x){ return x.channel || (x.method==='cash' ? 'cash' : 'bank'); }
+function flows(cb){ // cb(channel, signedAmount) for every money movement
+  db.loans.forEach(l=>{
+    cb(l.channel||'bank', Number(l.amount)||0);
+    (l.repayments||[]).forEach(r=>cb(chan(r), -(Number(r.amount)||0)));
+  });
+  db.properties.forEach(p=>{
+    (p.payments||[]).forEach(x=>cb(chan(x), -(Number(x.amount)||0)));
+    if(p.sale) (p.sale.receipts||[]).forEach(x=>cb(chan(x), Number(x.amount)||0));
+  });
+}
+function balanceOf(pred){ let b=0; flows((ch,a)=>{ if(pred(ch)) b+=a; }); return b; }
+function cashBalance(){ return (Number(db.openCash)||0) + balanceOf(ch=>ch==='cash'); }
+function bankTotal(){ return (Number(db.openBank)||0) + sum(db.banks,b=>b.opening) + balanceOf(ch=>ch!=='cash'); }
+function bankAccBalance(bid){
+  const b=db.banks.find(x=>x.id===bid);
+  return (b?Number(b.opening)||0:0) + balanceOf(ch=>ch===bid);
+}
+function bankUnassigned(){ return (Number(db.openBank)||0) + balanceOf(ch=>ch!=='cash' && !db.banks.some(b=>b.id===ch)); }
+function bankLabel(b){ return b.bank + (b.number?' · '+b.number:''); }
+function channelOptions(sel){
+  let o='<option value="cash" '+(sel==='cash'?'selected':'')+'>Cash in hand</option>';
+  if(db.banks.length) o+=db.banks.map(b=>'<option value="'+b.id+'" '+(sel===b.id?'selected':'')+'>'+esc(bankLabel(b))+'</option>').join('');
+  else o+='<option value="bank" '+(sel&&sel!=='cash'?'selected':'')+'>Bank account</option>';
+  return o;
+}
+function defaultBank(){ return db.banks.length ? db.banks[0].id : 'bank'; }
+/* partner share: each partner has mode 'pct' (% of price) or 'amt' (fixed amount). Legacy {share} = pct */
+function partnerMode(x){ return x.mode || 'pct'; }
+function partnerValue(x){ return Number(x.mode!==undefined ? x.value : x.share)||0; }
+function partnerMoney(p, x){ // one partner's contribution in money
+  const price=Number(p.purchasePrice)||0;
+  return partnerMode(x)==='amt' ? partnerValue(x) : price*partnerValue(x)/100;
+}
+function partnersTotal(p){ return sum(p.partners, x=>partnerMoney(p,x)); }
+function partnerLabel(p, x){ return partnerMode(x)==='amt' ? fmt(partnerValue(x)) : partnerValue(x)+'% = '+fmt(partnerMoney(p,x)); }
+const METHODS = {cash:'Cash', bank:'Bank account', down:'Cash down', installment:'Hire purchase / installment'};
+const SOURCES = {own:'Own money', bankloan:'Bank loan', parents:'Loan from parents', otherloan:'Loan from others', partner:'Partner money', salemoney:'Money from a sale'};
+
+/* ---------- router ---------- */
+let view = {page:'home'}; // pages: home, properties, detail(id), loans, settings
+function go(page, id){ view={page, id}; render(); window.scrollTo(0,0); }
+
+/* ---------- render ---------- */
+function render(){
+  renderHeader(); renderNav();
+  const m = document.getElementById('main');
+  if(view.page==='home') m.innerHTML = homeView();
+  else if(view.page==='properties') m.innerHTML = propertiesView();
+  else if(view.page==='detail') m.innerHTML = detailView(view.id);
+  else if(view.page==='loans') m.innerHTML = loansView();
+  else if(view.page==='settings') m.innerHTML = settingsView();
+}
+function renderHeader(){
+  const titles={home:'Property Tracker',properties:'My Properties',detail:'Property Details',loans:'Loans & Borrowing',settings:'Settings'};
+  let h = '';
+  if(view.page==='detail') h += '<button class="back" onclick="go(\'properties\')">‹</button>';
+  h += '<h1>'+titles[view.page]+'</h1>';
+  document.getElementById('header').innerHTML = h;
+}
+function renderNav(){
+  const items=[['home','Home'],['properties','Properties'],['loans','Loans'],['settings','Settings']];
+  document.getElementById('nav').innerHTML = '<div class="brand">Property Tracker</div>' + items.map(([p,lb])=>
+    '<button class="'+((view.page===p||(p==='properties'&&view.page==='detail'))?'active':'')+'" onclick="go(\''+p+'\')"><span class="ic"></span>'+lb+'</button>'
+  ).join('');
+}
+
+/* ---------- HOME ---------- */
+function homeView(){
+  const ps = db.properties;
+  const active = ps.filter(p=>!p.sale);
+  const sold = ps.filter(p=>p.sale);
+  const totalInvested = sum(ps, paidAmt);
+  const stillToPay = sum(ps, owedAmt);
+  const receivable = sum(sold, receivableAmt);
+  const loansOut = sum(db.loans, loanOutstanding);
+  const realizedProfit = sum(sold, profit);
+  const unpaidComm = sum(ps, p=>{
+    let t=0;
+    if(p.buyBroker && p.buyBroker.pct && !p.buyBroker.paid) t+=buyComm(p)*shareF(p);
+    if(p.sale && p.sale.broker && p.sale.broker.pct && !p.sale.broker.paid) t+=sellComm(p)*shareF(p);
+    return t;
+  });
+  const cashB=cashBalance(), bankB=bankTotal();
+  let h = '<div class="card">'
+    +'<div style="display:flex;gap:10px">'
+    +'<div style="flex:1"><div class="lbl" style="font-size:12px;color:var(--muted)">Cash in hand</div><div class="amount-big" style="color:'+(cashB<0?'var(--red)':'var(--green)')+'">'+fmt(cashB)+'</div></div>'
+    +'<div style="flex:1"><div class="lbl" style="font-size:12px;color:var(--muted)">Bank balance</div><div class="amount-big" style="color:'+(bankB<0?'var(--red)':'var(--green)')+'">'+fmt(bankB)+'</div></div>'
+    +'</div>';
+  if(db.banks.length){
+    const un=bankUnassigned();
+    h+='<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px">'
+      + db.banks.map(b=>'<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:var(--muted)">'+esc(bankLabel(b))+'</span><span style="font-weight:600;color:'+(bankAccBalance(b.id)<0?'var(--red)':'var(--text)')+'">'+fmt(bankAccBalance(b.id))+'</span></div>').join('')
+      +(un!==0?'<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:var(--muted)">Opening / unassigned</span><span style="font-weight:600">'+fmt(un)+'</span></div>':'')
+      +'</div>';
+  }
+  h+='<div style="font-size:11px;color:var(--muted);margin-top:8px">Set opening balances & bank accounts in Settings</div></div>';
+  h += '<div class="grid2">'
+    + stat('Properties', active.length+' active / '+sold.length+' sold','')
+    + stat('Paid out so far', fmtC(totalInvested),'')
+    + stat('Still to pay (purchases)', fmtC(stillToPay), stillToPay>0?'warn':'')
+    + stat('To receive (sales)', fmtC(receivable), receivable>0?'pos':'')
+    + stat('Loans outstanding', fmtC(loansOut), loansOut>0?'neg':'')
+    + stat('Profit (sold)', fmtC(realizedProfit), realizedProfit>=0?'pos':'neg')
+    + '</div>';
+  if(unpaidComm>0) h += '<div class="card" style="margin-top:12px"><span class="badge b-amber">Broker commission unpaid</span><div style="margin-top:6px;font-weight:700">'+fmt(unpaidComm)+'</div></div>';
+  h += '<div class="btnrow"><button class="primary" onclick="openPropertyForm()">+ Add Property</button><button class="primary outline" onclick="openLoanForm()">+ Add Loan</button></div>';
+  // upcoming obligations
+  const owing = ps.filter(p=>owedAmt(p)>0);
+  if(owing.length){
+    h+='<h2>Purchases not fully paid</h2><div class="card">'+owing.map(p=>{
+      const pct=Math.min(100,Math.round(paidAmt(p)/Math.max(1,myCost(p))*100));
+      return '<div class="clickable" style="padding:9px 0;border-bottom:1px solid var(--line)" onclick="go(\'detail\',\''+p.id+'\')">'
+        +'<div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:600">'+esc(p.name)+'</span><span class="neg" style="font-weight:700;white-space:nowrap">'+fmtC(owedAmt(p))+' left</span></div>'
+        +'<div class="progress"><div style="width:'+pct+'%"></div></div>'
+        +'<div class="sub" style="margin-top:3px">'+pct+'% paid · '+fmt(paidAmt(p))+' of '+fmt(myCost(p))+'</div>'
+        +'</div>';
+    }).join('')+'</div>';
+  }
+  const collecting = sold.filter(p=>receivableAmt(p)>0);
+  if(collecting.length){
+    h+='<h2>Sales not fully collected</h2><div class="card">'+collecting.map(p=>{
+      const pct=Math.min(100,Math.round(receivedAmt(p)/Math.max(1,mySaleAmt(p))*100));
+      return '<div class="clickable" style="padding:9px 0;border-bottom:1px solid var(--line)" onclick="go(\'detail\',\''+p.id+'\')">'
+        +'<div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:600">'+esc(p.name)+'</span><span style="font-weight:700;white-space:nowrap;color:var(--blue)">'+fmtC(receivableAmt(p))+' to get</span></div>'
+        +'<div class="progress"><div style="width:'+pct+'%;background:var(--blue)"></div></div>'
+        +'<div class="sub" style="margin-top:3px">'+pct+'% received · '+fmt(receivedAmt(p))+' of '+fmt(mySaleAmt(p))+'</div>'
+        +'</div>';
+    }).join('')+'</div>';
+  }
+  return h;
+}
+function stat(lbl,val,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+cls+'">'+val+'</div></div>'; }
+function fmtC(n){
+  n=Number(n)||0; const a=Math.abs(n); let s;
+  if(a>=1e9) s=(n/1e9).toFixed(1).replace(/\.0$/,'')+'B';
+  else if(a>=1e6) s=(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+  else if(a>=1e4) s=(n/1e3).toFixed(0)+'K';
+  else s=new Intl.NumberFormat('en-US').format(Math.round(n));
+  return s+' '+db.currency;
+}
+
+/* ---------- PROPERTIES LIST ---------- */
+function propertiesView(){
+  let h = '<button class="primary" onclick="openPropertyForm()">+ Add Property</button>';
+  if(!db.properties.length) return h + '<div class="empty">No properties yet.<br>Tap "Add Property" to record your first purchase.</div>';
+  h += '<div style="height:12px"></div>';
+  h += '<div class="cardgrid">' + db.properties.slice().reverse().map(p=>{
+    const soldB = p.sale ? '<span class="badge b-blue">SOLD</span>' : (owedAmt(p)>0 ? '<span class="badge b-amber">PAYING</span>' : '<span class="badge b-green">PAID</span>');
+    const partners = p.partners && p.partners.length ? '<span class="badge b-gray">shared '+myShare(p)+'%</span>' : '';
+    return '<div class="card clickable" onclick="go(\'detail\',\''+p.id+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><strong>'+esc(p.name)+'</strong><span>'+soldB+' '+partners+'</span></div>'
+      +'<div class="muted" style="margin:4px 0">'+esc(p.type)+(p.location?' · '+esc(p.location):'')+' · bought '+esc(p.purchaseDate||'')+'</div>'
+      +'<div class="kv"><span>Price</span><span>'+fmt(p.purchasePrice)+'</span></div>'
+      +(p.sale? '<div class="kv"><span>Sold for</span><span>'+fmt(p.sale.price)+'</span></div><div class="kv"><span>Profit</span><span class="'+(profit(p)>=0?'pos':'neg')+'">'+fmt(profit(p))+'</span></div>'
+              : '<div class="kv"><span>Still to pay</span><span class="'+(owedAmt(p)>0?'neg':'pos')+'">'+fmt(owedAmt(p))+'</span></div>')
+      +'</div>';
+  }).join('') + '</div>';
+  return h;
+}
+
+/* ---------- PROPERTY DETAIL ---------- */
+function detailView(id){
+  const p = db.properties.find(x=>x.id===id);
+  if(!p) return '<div class="empty">Not found</div>';
+  let h = '<div class="card">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><strong style="font-size:17px">'+esc(p.name)+'</strong><div class="muted">'+esc(p.type)+(p.location?' · '+esc(p.location):'')+'</div></div>'
+    +(p.sale?'<span class="badge b-blue">SOLD</span>':'<span class="badge b-green">OWNED</span>')+'</div>'
+    +'<div style="height:8px"></div>'
+    +'<div class="kv"><span>Purchase price (whole property)</span><span>'+fmt(p.purchasePrice)+'</span></div>'
+    +(myShare(p)<100?'<div class="kv"><span>My share ('+myShare(p)+'%)</span><span>'+fmt(myCost(p))+'</span></div>':'')
+    +'<div class="kv"><span>Purchase date</span><span>'+esc(p.purchaseDate||'-')+'</span></div>'
+    +'<div class="kv"><span>I paid so far</span><span>'+fmt(paidAmt(p))+'</span></div>'
+    +'<div class="kv"><span>Still to pay (my part)</span><span class="'+(owedAmt(p)>0?'neg':'pos')+'">'+fmt(owedAmt(p))+'</span></div>';
+  if(p.notes) h+='<div class="muted" style="margin-top:6px">'+esc(p.notes)+'</div>';
+  h+='<div class="btnrow"><button class="small outline" onclick="openPropertyForm(\''+p.id+'\')">✎ Edit purchase record</button></div>';
+  h+='</div>';
+
+  // partners
+  if(p.partners && p.partners.length){
+    h+='<h2>Co-owners</h2><div class="card"><div class="row"><div>Me</div><strong>'+myShare(p)+'% = '+fmt(myCost(p))+'</strong></div>'
+      + p.partners.map(x=>'<div class="row"><div>'+esc(x.name)+'</div><strong>'+partnerLabel(p,x)+'</strong></div>').join('')+'</div>';
+  }
+
+  // buy broker
+  if(p.buyBroker && p.buyBroker.pct){
+    h+='<h2>Broker (purchase)</h2><div class="card"><div class="kv"><span>'+esc(p.buyBroker.name||'Broker')+' ('+p.buyBroker.pct+'%)</span><span>'+fmt(buyComm(p))+'</span></div>'
+      +(myShare(p)<100?'<div class="kv"><span>My part ('+myShare(p)+'%)</span><span>'+fmt(buyComm(p)*shareF(p))+'</span></div>':'')
+      +'<div class="btnrow">'+(p.buyBroker.paid
+        ?'<span class="badge b-green">Commission paid</span>'
+        :'<button class="small" onclick="markCommPaid(\''+p.id+'\',\'buy\')">Mark commission paid</button>')+'</div></div>';
+  }
+
+  // payments
+  h+='<div class="section-head"><h2>Payments made</h2>'+(owedAmt(p)>0||!p.payments.length?'<button class="small" onclick="openPaymentForm(\''+p.id+'\')">+ Payment</button>':'<button class="small" onclick="openPaymentForm(\''+p.id+'\')">+ Payment</button>')+'</div>';
+  h+= p.payments.length
+    ? '<div class="card">'+p.payments.map(x=>'<div class="row"><div><div>'+fmt(x.amount)+'</div><div class="sub">'+esc(x.date)+' · '+(METHODS[x.method]||x.method)+' · '+(SOURCES[x.source]||x.source)+(x.note?' · '+esc(x.note):'')+'</div></div><button class="small danger" onclick="delPayment(\''+p.id+'\',\''+x.id+'\')">✕</button></div>').join('')+'</div>'
+    : '<div class="card empty" style="padding:14px">No payments recorded yet</div>';
+
+  // sale
+  if(!p.sale){
+    h+='<div class="btnrow"><button class="primary" onclick="openSaleForm(\''+p.id+'\')">Record Sale</button><button class="primary danger" onclick="delProperty(\''+p.id+'\')">Delete Property</button></div>';
+  } else {
+    const s=p.sale;
+    h+='<h2>Sale</h2><div class="card">'
+      +'<div class="kv"><span>Sale price (whole property)</span><span>'+fmt(s.price)+'</span></div>'
+      +(myShare(p)<100?'<div class="kv"><span>My share ('+myShare(p)+'%)</span><span>'+fmt(mySaleAmt(p))+'</span></div>':'')
+      +'<div class="kv"><span>Date</span><span>'+esc(s.date)+'</span></div>'
+      +(s.buyer?'<div class="kv"><span>Buyer</span><span>'+esc(s.buyer)+'</span></div>':'')
+      +'<div class="kv"><span>I received</span><span>'+fmt(receivedAmt(p))+'</span></div>'
+      +'<div class="kv"><span>Still to receive (my part)</span><span class="'+(receivableAmt(p)>0?'warn':'pos')+'">'+fmt(receivableAmt(p))+'</span></div>'
+      +'<div class="kv"><span>My profit</span><span class="'+(profit(p)>=0?'pos':'neg')+'">'+fmt(profit(p))+'</span></div>'
+      +'<div class="btnrow"><button class="small outline" onclick="openSaleForm(\''+p.id+'\')">✎ Edit sale record</button></div>';
+    if(s.broker && s.broker.pct){
+      h+='<div class="kv"><span>Broker '+esc(s.broker.name||'')+' ('+s.broker.pct+'% of '+(s.broker.basis==='profit'?'profit':'sale price')+')</span><span>'+fmt(sellComm(p))+'</span></div>'
+        +(myShare(p)<100?'<div class="kv"><span>My part ('+myShare(p)+'%)</span><span>'+fmt(sellComm(p)*shareF(p))+'</span></div>':'')
+        +'<div class="btnrow">'+(s.broker.paid?'<span class="badge b-green">Commission paid</span>':'<button class="small" onclick="markCommPaid(\''+p.id+'\',\'sell\')">Mark commission paid</button>')+'</div>';
+    }
+    h+='</div>';
+    h+='<div class="section-head"><h2>Money received from buyer</h2><button class="small" onclick="openReceiptForm(\''+p.id+'\')">+ Receipt</button></div>';
+    h+= s.receipts && s.receipts.length
+      ? '<div class="card">'+s.receipts.map(x=>'<div class="row"><div><div>'+fmt(x.amount)+'</div><div class="sub">'+esc(x.date)+' · '+(METHODS[x.method]||x.method)+(x.note?' · '+esc(x.note):'')+'</div></div><button class="small danger" onclick="delReceipt(\''+p.id+'\',\''+x.id+'\')">✕</button></div>').join('')+'</div>'
+      : '<div class="card empty" style="padding:14px">Nothing received yet</div>';
+    h+='<div class="btnrow"><button class="primary danger" onclick="delSale(\''+p.id+'\')">Remove Sale Record</button><button class="primary danger" onclick="delProperty(\''+p.id+'\')">Delete Property</button></div>';
+  }
+  return h;
+}
+
+/* ---------- LOANS ---------- */
+function loansView(){
+  let h='<button class="primary" onclick="openLoanForm()">+ Add Loan</button>';
+  if(!db.loans.length) return h+'<div class="empty">No loans recorded.<br>Record money you borrowed from banks, parents or others.</div>';
+  h+='<div style="height:12px"></div>';
+  const types={bank:'Bank',parents:'Parents',other:'Other'};
+  h+= '<div class="cardgrid">' + db.loans.slice().reverse().map(l=>{
+    const out=loanOutstanding(l);
+    const rate=Number(l.rate)||0;
+    const intSoFar=loanInterest(l, today());
+    const intFull=l.endDate?loanInterest(l, l.endDate):0;
+    const overdue = l.endDate && l.endDate<today() && out>0;
+    return '<div class="card">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center"><strong>'+esc(l.lender)+'</strong><span class="badge '+(overdue?'b-red':(out>0?'b-amber':'b-green'))+'">'+(overdue?'OVERDUE':(out>0?'OWING':'REPAID'))+'</span></div>'
+      +'<div class="muted" style="margin:4px 0">'+(types[l.type]||l.type)
+        +' · '+esc(l.date||'?')+' → '+(l.endDate?esc(l.endDate):'no end date')
+        +(l.note?' · '+esc(l.note):'')+'</div>'
+      +'<div class="kv"><span>Borrowed</span><span>'+fmt(l.amount)+'</span></div>'
+      +(rate?'<div class="kv"><span>Interest rate</span><span>'+rate+'% / year</span></div>'
+            +'<div class="kv"><span>Interest so far (to today)</span><span class="warn">'+fmt(intSoFar)+'</span></div>'
+            +(l.endDate?'<div class="kv"><span>Total interest (full period)</span><span>'+fmt(intFull)+'</span></div>':'')
+        :'')
+      +'<div class="kv"><span>Repaid</span><span>'+fmt(loanRepaid(l))+'</span></div>'
+      +'<div class="kv"><span>Outstanding principal</span><span class="'+(out>0?'neg':'pos')+'">'+fmt(out)+'</span></div>'
+      +(rate&&(out>0||intSoFar>loanRepaid(l)-Number(l.amount))?'<div class="kv"><span>Owed today (principal + interest)</span><span class="neg">'+fmt(Math.max(0,(Number(l.amount)||0)+intSoFar-loanRepaid(l)))+'</span></div>':'')
+      +(l.repayments.length?'<div style="margin-top:6px">'+l.repayments.map(r=>'<div class="row"><span class="sub">'+esc(r.date)+'</span><span>'+fmt(r.amount)+'</span></div>').join('')+'</div>':'')
+      +'<div class="btnrow">'+(out>0?'<button class="small" onclick="openRepayForm(\''+l.id+'\')">+ Repayment</button>':'')+'<button class="small outline" onclick="openLoanForm(\''+l.id+'\')">✎ Edit</button><button class="small danger" onclick="delLoan(\''+l.id+'\')">Delete</button></div>'
+      +'</div>';
+  }).join('') + '</div>';
+  return h;
+}
+
+/* ---------- SETTINGS ---------- */
+function settingsView(){
+  return '<div class="card"><label>Currency</label>'
+    +'<select onchange="db.currency=this.value;save();render()">'
+    +['MMK','USD','THB','SGD'].map(c=>'<option '+(db.currency===c?'selected':'')+'>'+c+'</option>').join('')
+    +'</select></div>'
+    +'<div class="card"><strong>Bank accounts</strong>'
+    +(db.banks.length
+      ? db.banks.map(b=>'<div class="row"><div><div><strong>'+esc(b.bank)+'</strong></div><div class="sub">'+esc(b.number||'')+(b.holder?' · '+esc(b.holder):'')+' · opening '+fmt(b.opening||0)+'</div></div>'
+        +'<div style="white-space:nowrap"><button class="small outline" onclick="openBankForm(\''+b.id+'\')">✎</button> <button class="small danger" onclick="delBank(\''+b.id+'\')">✕</button></div></div>').join('')
+      : '<div class="muted" style="margin-top:6px">No bank accounts added yet.</div>')
+    +'<div class="btnrow"><button class="small" onclick="openBankForm()">+ Add bank account</button></div></div>'
+    +'<div class="card"><strong>Opening balances</strong><div class="muted" style="margin-top:4px">How much money you had before your first record in this app. For bank money, set the opening balance on each bank account above.</div>'
+    +'<label>Cash in hand</label><input type="number" inputmode="numeric" value="'+(db.openCash||0)+'" onchange="db.openCash=Number(this.value)||0;save()">'
+    +(db.openBank?'<label>Bank (old, unassigned)</label><input type="number" inputmode="numeric" value="'+db.openBank+'" onchange="db.openBank=Number(this.value)||0;save()">':'')
+    +'</div>'
+    +driveCard()
+    +'<div class="card"><strong>Backup</strong><div class="muted" style="margin:6px 0">Your data is saved only on this device. Export a backup file regularly.</div>'
+    +'<div class="btnrow"><button class="small" onclick="exportData()">Export backup</button><button class="small outline" onclick="document.getElementById(\'importFile\').click()">Import backup</button></div>'
+    +'<input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)"></div>'
+    +'<div class="card muted">Property Tracker · records land &amp; building purchases, sales, loans, partners and broker commissions. Tip: open this file in your phone browser and use "Add to Home Screen" to use it like an app.</div>';
+}
+function openBankForm(bid){
+  const b = bid ? db.banks.find(x=>x.id===bid) : null;
+  openModal(
+    '<h3>'+(b?'Edit Bank Account':'Add Bank Account')+'</h3>'
+    +'<label>Bank name</label><input id="f_bank" placeholder="e.g. KBZ, AYA, CB" value="'+(b?esc(b.bank):'')+'">'
+    +'<label>Account number</label><input id="f_accno" value="'+(b?esc(b.number):'')+'">'
+    +'<label>Account holder name</label><input id="f_holder" placeholder="Name on the account" value="'+(b?esc(b.holder):'')+'">'
+    +'<label>Opening balance (money already in this account)</label><input id="f_opening" type="number" inputmode="numeric" value="'+(b?(b.opening||0):0)+'">'
+    +'<div class="btnrow"><button class="primary outline" onclick="closeModal()">Cancel</button><button class="primary" onclick="saveBank('+(b?'\''+bid+'\'':'')+')">Save</button></div>'
+  );
+}
+function saveBank(bid){
+  const bank=val('f_bank');
+  if(!bank){ alert('Enter the bank name.'); return; }
+  const fields={bank, number:val('f_accno'), holder:val('f_holder'), opening:num('f_opening')};
+  if(bid) Object.assign(db.banks.find(x=>x.id===bid), fields);
+  else db.banks.push(Object.assign({id:uid()}, fields));
+  save(); closeModal(); render();
+}
+function delBank(bid){
+  if(!confirm('Remove this bank account? Past transactions are kept and counted under "Opening / unassigned".')) return;
+  db.banks=db.banks.filter(x=>x.id!==bid); save(); render();
+}
+function driveCard(){
+  const c = db.sync || {};
+  let h='<div class="card"><strong>Google Drive sync</strong>';
+  if(c.connected){
+    h+='<div class="muted" style="margin-top:4px">Connected — every change is saved to your Google Drive automatically (file: property-tracker-data.json).'
+      +(c.lastSync?' Last sync: '+new Date(c.lastSync).toLocaleString():'')+'</div>'
+      +(syncMsg?'<div style="color:var(--red);font-size:13px;margin-top:6px">'+esc(syncMsg)+'</div>':'')
+      +'<div class="btnrow"><button class="small" onclick="queueSync()">Sync now</button><button class="small danger" onclick="disconnectDrive()">Disconnect</button></div>';
+  }else{
+    h+='<div class="muted" style="margin-top:4px">Save all data automatically to your Google Drive, so a new phone gets everything just by connecting. Needs a one-time setup — follow the setup guide that came with this app.</div>'
+      +'<label>Google Client ID</label><input id="f_clientid" placeholder="xxxxx.apps.googleusercontent.com" value="'+esc(c.clientId||'')+'">'
+      +(syncMsg?'<div style="color:var(--red);font-size:13px;margin-top:6px">'+esc(syncMsg)+'</div>':'')
+      +'<div class="btnrow"><button class="small" onclick="connectDrive()">Connect Google Drive</button></div>';
+  }
+  return h+'</div>';
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='property-tracker-backup-'+today()+'.json';
+  a.click();
+}
+function importData(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(d&&d.properties){ db=d; save(); render(); alert('Backup imported.'); } else alert('Invalid backup file.'); }catch(e){ alert('Could not read file.'); } };
+  r.readAsText(f);
+}
+
+/* ---------- modal helpers ---------- */
+function openModal(html){
+  document.getElementById('modalRoot').innerHTML =
+    '<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">'+html+'</div></div>';
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+function val(id){ return document.getElementById(id).value.trim(); }
+function num(id){ return Number(document.getElementById(id).value)||0; }
+
+/* ---------- forms ---------- */
+let tmpPartners=[];
+function openPropertyForm(pid){
+  const p = pid ? db.properties.find(x=>x.id===pid) : null;
+  tmpPartners = p ? (p.partners||[]).map(x=>({name:x.name,mode:partnerMode(x),value:partnerValue(x)})) : [];
+  const types=['Land','Building','Land + Building','Condo / Apartment'];
+  const saveArg = p ? '\''+pid+'\'' : '';
+  openModal(
+    '<h3>'+(p?'Edit Property Purchase':'Add Property Purchase')+'</h3>'
+    +'<label>Name / description</label><input id="f_name" placeholder="e.g. Land plot, Hlaing Township" value="'+(p?esc(p.name):'')+'">'
+    +'<label>Type</label><select id="f_type">'+types.map(t=>'<option '+(p&&p.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select>'
+    +'<label>Location (optional)</label><input id="f_loc" value="'+(p?esc(p.location):'')+'">'
+    +'<label>Purchase price</label><input id="f_price" type="number" inputmode="numeric" placeholder="0" value="'+(p?p.purchasePrice:'')+'">'
+    +'<label>Purchase date</label><input id="f_date" type="date" value="'+(p?esc(p.purchaseDate):today())+'">'
+    +'<label>Broker name (optional)</label><input id="f_bname" placeholder="Leave empty if no broker" value="'+(p&&p.buyBroker?esc(p.buyBroker.name):'')+'">'
+    +'<label>Broker commission %</label><input id="f_bpct" type="number" inputmode="decimal" value="'+(p&&p.buyBroker?p.buyBroker.pct:2)+'">'
+    +'<label>Co-owners / partners (optional)</label><div id="partnerList"></div>'
+    +'<button class="small outline" type="button" onclick="addPartnerRow()">+ Add partner</button>'
+    +'<label>Notes (optional)</label><textarea id="f_notes" rows="2">'+(p?esc(p.notes):'')+'</textarea>'
+    +'<div class="btnrow"><button class="primary outline" onclick="closeModal()">Cancel</button><button class="primary" onclick="saveProperty('+saveArg+')">Save</button></div>'
+  );
+  if(p) drawPartnerRows();
+}
+function addPartnerRow(){
+  tmpPartners.push({name:'',mode:'pct',value:''});
+  drawPartnerRows();
+}
+function drawPartnerRows(){
+  document.getElementById('partnerList').innerHTML = tmpPartners.map((x,i)=>
+    '<div class="partner-row"><input placeholder="Partner name" value="'+esc(x.name)+'" oninput="tmpPartners['+i+'].name=this.value">'
+    +'<input placeholder="'+(x.mode==='amt'?'Amount':'%')+'" type="number" inputmode="decimal" value="'+esc(x.value)+'" oninput="tmpPartners['+i+'].value=this.value">'
+    +'<select onchange="tmpPartners['+i+'].mode=this.value;drawPartnerRows()">'
+    +'<option value="pct" '+(x.mode!=='amt'?'selected':'')+'>% of price</option>'
+    +'<option value="amt" '+(x.mode==='amt'?'selected':'')+'>Fixed amount</option></select>'
+    +'<button onclick="tmpPartners.splice('+i+',1);drawPartnerRows()">✕</button></div>'
+  ).join('');
+}
+function saveProperty(pid){
+  const name=val('f_name'), price=num('f_price');
+  if(!name){ alert('Please enter a name.'); return; }
+  if(!price){ alert('Please enter the purchase price.'); return; }
+  const partners=tmpPartners.filter(x=>x.name&&Number(x.value)>0).map(x=>({name:x.name,mode:x.mode==='amt'?'amt':'pct',value:Number(x.value)}));
+  const bname=val('f_bname'), bpct=num('f_bpct');
+  if(pid){
+    const p=db.properties.find(x=>x.id===pid);
+    Object.assign(p,{name, type:val('f_type')||'Land', location:val('f_loc'),
+      purchasePrice:price, purchaseDate:val('f_date'), notes:val('f_notes'), partners});
+    p.buyBroker = bname ? {name:bname, pct:bpct, paid:(p.buyBroker&&p.buyBroker.name===bname)?p.buyBroker.paid:false} : null;
+    save(); closeModal(); render();
+    return;
+  }
+  db.properties.push({
+    id:uid(), name, type:val('f_type')||'Land', location:val('f_loc'),
+    purchasePrice:price, purchaseDate:val('f_date'), notes:val('f_notes'),
+    partners, buyBroker: bname? {name:bname,pct:bpct,paid:false} : null,
+    payments:[], sale:null
+  });
+  save(); closeModal(); go('properties');
+}
+function delProperty(id){
+  if(!confirm('Delete this property and all its records?')) return;
+  db.properties = db.properties.filter(p=>p.id!==id);
+  save(); go('properties');
+}
+
+function openPaymentForm(pid){
+  const p=db.properties.find(x=>x.id===pid);
+  openModal(
+    '<h3>Add Payment · '+esc(p.name)+'</h3>'
+    +'<div class="muted">Still to pay: '+fmt(owedAmt(p))+'</div>'
+    +'<label>Amount</label><input id="f_amt" type="number" inputmode="numeric">'
+    +'<label>Date</label><input id="f_date" type="date" value="'+today()+'">'
+    +'<label>Payment method</label><select id="f_method" onchange="syncChannel(this.value)">'+Object.entries(METHODS).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select>'
+    +'<label>Paid from</label><select id="f_channel">'+channelOptions('cash')+'</select>'
+    +'<label>Money came from</label><select id="f_source">'+Object.entries(SOURCES).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select>'
+    +'<label>Note (optional)</label><input id="f_note">'
+    +'<div class="btnrow"><button class="primary outline" onclick="closeModal()">Cancel</button><button class="primary" onclick="savePayment(\''+pid+'\')">Save</button></div>'
+  );
+}
+function syncChannel(method){
+  const c=document.getElementById('f_channel');
+  if(!c) return;
+  if(method==='cash') c.value='cash';
+  else if(method==='bank') c.value=defaultBank();
+}
+function savePayment(pid){
+  const amt=num('f_amt'); if(!amt){alert('Enter the amount.');return;}
+  const p=db.properties.find(x=>x.id===pid);
+  p.payments.push({id:uid(),date:val('f_date'),amount:amt,method:val('f_method'),channel:val('f_channel'),source:val('f_source'),note:val('f_note')});
+  save(); closeModal(); render();
+}
+function delPayment(pid,xid){
+  if(!confirm('Delete this payment?'))return;
+  const p=db.properties.find(x=>x.id===pid);
+  p.payments=p.payments.filter(x=>x.id!==xid); save(); render();
+}
+
+function openSaleForm(pid){
+  const p=db.properties.find(x=>x.id===pid);
+  const s=p.sale;
+  openModal(
+    '<h3>'+(s?'Edit Sale':'Record Sale')+' · '+esc(p.name)+'</h3>'
+    +(owedAmt(p)>0?'<div class="muted">Note: you still owe '+fmt(owedAmt(p))+' on this purchase. You can still record the sale.</div>':'')
+    +'<label>Sale price</label><input id="f_price" type="number" inputmode="numeric" value="'+(s?s.price:'')+'">'
+    +'<label>Sale date</label><input id="f_date" type="date" value="'+(s?esc(s.date):today())+'">'
+    +'<label>Buyer (optional)</label><input id="f_buyer" value="'+(s?esc(s.buyer):'')+'">'
+    +'<label>Broker name (optional)</label><input id="f_bname" placeholder="Leave empty if no broker" value="'+(s&&s.broker?esc(s.broker.name):'')+'">'
+    +'<label>Commission is calculated on</label><select id="f_bbasis" onchange="document.getElementById(\'f_bpct\').value=this.value===\'profit\'?10:2">'
+    +'<option value="price" '+(s&&s.broker&&s.broker.basis==='profit'?'':'selected')+'>% of sale price</option>'
+    +'<option value="profit" '+(s&&s.broker&&s.broker.basis==='profit'?'selected':'')+'>% of profit</option></select>'
+    +'<label>Broker commission %</label><input id="f_bpct" type="number" inputmode="decimal" value="'+(s&&s.broker?s.broker.pct:2)+'">'
+    +'<div class="btnrow"><button class="primary outline" onclick="closeModal()">Cancel</button><button class="primary" onclick="saveSale(\''+pid+'\')">Save</button></div>'
+  );
+}
+function saveSale(pid){
+  const price=num('f_price'); if(!price){alert('Enter the sale price.');return;}
+  const p=db.properties.find(x=>x.id===pid);
+  const bname=val('f_bname');
+  const old=p.sale;
+  p.sale={date:val('f_date'),price,buyer:val('f_buyer'),
+    broker: bname? {name:bname,pct:num('f_bpct'),basis:val('f_bbasis'),paid:(old&&old.broker&&old.broker.name===bname)?old.broker.paid:false} : null,
+    receipts: old? old.receipts : []};
+  save(); closeModal(); render();
+}
+function delSale(pid){
+  if(!confirm('Remove the sale record? The property goes back to "owned".'))return;
+  const p=db.properties.find(x=>x.id===pid); p.sale=null; save(); render();
+}
+
+function openReceiptForm(pid){
+  const p=db.properties.find(x=>x.id===pid);
+  openModal(
+    '<h3>Money Received · '+esc(p.name)+'</h3>'
+    +'<div class="muted">Still to receive: '+fmt(receivableAmt(p))+'</div>'
+    +'<label>Amount</label><input id="f_amt" type="number" inputmode="numeric">'
+    +'<label>Date</label><input id="f_date" type="date" value="'+today()+'">'
+    +'<label>Method</label><select id="f_method" onchange="syncChannel(this.value)">'+Object.entries(METHODS).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select>'
+    +'<label>Received into</label><select id="f_channel">'+channelOptions(defaultBank())+'</select>'
+    +'<label>Note (optional)</label><input id="f_note">'
+    +'<div class="btnrow"><button class="primary outline" onclick="closeModal()">Cancel</button><button class="primary" onclick="saveReceipt(\''+pid+'\')">Save</button></div>'
+  );
+}
+function saveReceipt(pid){
+  const amt=num('f_amt'); if(!amt){alert('Enter the amount.');return;}
+  const p=db.properties.find(x=>x.id===pid);
+  p.sale.receipts.push({id:uid(),date:val('f_date'),amount:amt,method:val('f_method'),channel:val('f_channel'),note:val('f_note')});
+  save(); closeModal(); render();
+}
+function delReceipt(pid,xid){
+  if(!confirm('Delete this receipt?'))return;
+  const p=db.properties.find(x=>x.id===pid);
+  p.sale.receipts=p.sale.receipts.filter(x=>x.id!==xid); save(); render();
+}
+
+function markCommPaid(pid,which){
+  const p=db.properties.find(x=>x.id===pid);
+  if(which==='buy') p.buyBroker.paid=true; else p.sale.broker.paid=true;
+  save(); render();
+}
+
+function openLoanForm(lid){
+  const l = lid ? db.loans.find(x=>x.id===lid) : null;
+  const ltypes=[['bank','Bank'],['parents','Parents'],['other','Other person']];
+  const saveArg = l ? '\''+lid+'\'' : '';
+  openModal(
+    '<h3>'+(l?'Edit Loan':'Add Loan / Borrowing')+'</h3>'
+    +'<label>Lender name</label><input id="f_lender" placeholder="e.g. KBZ Bank, Father" value="'+(l?esc(l.lender):'')+'">'
+    +'<label>Lender type</label><select id="f_ltype">'+ltypes.map(([k,v])=>'<option value="'+k+'" '+(l&&l.type===k?'selected':'')+'>'+v+'</option>').join('')+'</select>'
+    +'<label>Amount borrowed</label><input id="f_amt" type="number" inputmode="numeric" value="'+(l?l.amount:'')+'">'
+    +'<label>Interest rate (% per year, 0 = no interest)</label><input id="f_rate" type="number" inputmode="decimal" value="'+(l?(l.rate||0):0)+'">'
+    +'<label>Start date</label><input id="f_date" type="date" value="'+(l?esc(l.date):today())+'">'
+    +'<label>End date (when loan must be fully repaid)</label><input id="f_end" type="date" value="'+(l&&l.endDate?esc(l.endDate):'')+'">'
+    +'<label>Money received into</label><select id="f_channel">'+channelOptions(l?(l.channel||'bank'):defaultBank())+'</select>'
+    +'<label>Note (optional)</label><input id="f_note" value="'+(l?esc(l.note):'')+'">'
+    +'<div class="btnrow"><button class="primary outline" onclick="closeModal()">Cancel</button><button class="primary" onclick="saveLoan('+saveArg+')">Save</button></div>'
+  );
+}
+function saveLoan(lid){
+  const lender=val('f_lender'), amt=num('f_amt');
+  if(!lender||!amt){alert('Enter lender and amount.');return;}
+  const fields={lender,type:val('f_ltype'),amount:amt,rate:num('f_rate'),date:val('f_date'),endDate:val('f_end'),channel:val('f_channel'),note:val('f_note')};
+  if(lid){
+    const l=db.loans.find(x=>x.id===lid);
+    Object.assign(l,fields);
+    save(); closeModal(); render();
+    return;
+  }
+  fields.id=uid(); fields.repayments=[];
+  db.loans.push(fields);
+  save(); closeModal(); go('loans');
+}
+function openRepayForm(lid){
+  const l=db.loans.find(x=>x.id===lid);
+  openModal(
+    '<h3>Repayment · '+esc(l.lender)+'</h3>'
+    +'<div class="muted">Outstanding: '+fmt(loanOutstanding(l))+'</div>'
+    +'<label>Amount</label><input id="f_amt" type="number" inputmode="numeric">'
+    +'<label>Date</label><input id="f_date" type="date" value="'+today()+'">'
+    +'<label>Paid from</label><select id="f_channel">'+channelOptions(defaultBank())+'</select>'
+    +'<div class="btnrow"><button class="primary outline" onclick="closeModal()">Cancel</button><button class="primary" onclick="saveRepay(\''+lid+'\')">Save</button></div>'
+  );
+}
+function saveRepay(lid){
+  const amt=num('f_amt'); if(!amt){alert('Enter the amount.');return;}
+  const l=db.loans.find(x=>x.id===lid);
+  l.repayments.push({id:uid(),date:val('f_date'),amount:amt,channel:val('f_channel')});
+  save(); closeModal(); render();
+}
+function delLoan(lid){
+  if(!confirm('Delete this loan record?'))return;
+  db.loans=db.loans.filter(x=>x.id!==lid); save(); render();
+}
+
+/* ---------- Google Drive auto-sync ---------- */
+const SYNC_FILENAME='property-tracker-data.json';
+let gToken=null, gTokenExp=0, tokenClient=null, syncTimer=null, syncing=false, syncMsg='', gsiTries=0;
+function syncCfg(){ if(!db.sync) db.sync={clientId:'',fileId:'',connected:false,lastSync:0}; return db.sync; }
+function gsiReady(){ return typeof google!=='undefined' && google.accounts && google.accounts.oauth2; }
+function setSyncMsg(m){ syncMsg=m||''; if(view.page==='settings') render(); }
+function setupTokenClient(){
+  if(!gsiReady() || !syncCfg().clientId) return false;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: syncCfg().clientId,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: function(resp){
+      if(resp && resp.access_token){
+        gToken=resp.access_token;
+        gTokenExp=Date.now()+((Number(resp.expires_in)||3600)-120)*1000;
+        syncCfg().connected=true; persist();
+        doSync();
+      }
+    },
+    error_callback: function(){ setSyncMsg('Google sign-in was cancelled or failed.'); }
+  });
+  return true;
+}
+function connectDrive(){
+  const id=val('f_clientid');
+  if(!id){ alert('Paste your Google Client ID first (see the setup guide).'); return; }
+  syncCfg().clientId=id; persist();
+  if(location.protocol==='file:'){ alert('Drive sync only works when the app is opened from its website address (https), not as a local file. See the setup guide.'); return; }
+  if(!gsiReady()){ alert('Google sign-in script has not loaded yet. Check your internet connection and try again.'); return; }
+  setupTokenClient();
+  tokenClient.requestAccessToken({prompt:'consent'});
+}
+function disconnectDrive(){
+  if(!confirm('Stop syncing to Google Drive? Your data stays on this phone and in Drive, but changes will no longer be uploaded.')) return;
+  syncCfg().connected=false; gToken=null; persist(); render();
+}
+function ensureToken(){
+  if(gToken && Date.now()<gTokenExp){ doSync(); return; }
+  if(tokenClient || setupTokenClient()) tokenClient.requestAccessToken({prompt:''});
+}
+function queueSync(){
+  const c=syncCfg();
+  if(!c.connected || !c.clientId || location.protocol==='file:') return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(ensureToken, 1500);
+}
+async function gFetch(url, opts){
+  opts=opts||{}; opts.headers=Object.assign({Authorization:'Bearer '+gToken}, opts.headers||{});
+  const r=await fetch(url, opts);
+  if(!r.ok) throw new Error('Drive error '+r.status);
+  return r;
+}
+async function doSync(){
+  if(syncing) return; syncing=true;
+  try{
+    let cfg=syncCfg();
+    if(!cfg.fileId){
+      const q=encodeURIComponent("name='"+SYNC_FILENAME+"' and trashed=false");
+      const found=await (await gFetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id)')).json();
+      if(found.files && found.files.length){ cfg.fileId=found.files[0].id; persist(); }
+      else{
+        const boundary='ptb'+Date.now();
+        const body='--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+JSON.stringify({name:SYNC_FILENAME})
+          +'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+JSON.stringify(db)
+          +'\r\n--'+boundary+'--';
+        const created=await (await gFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+          {method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body})).json();
+        cfg.fileId=created.id; cfg.lastSync=Date.now(); persist(); setSyncMsg(''); syncing=false; return;
+      }
+    }
+    let remote=null;
+    try{ remote=await (await gFetch('https://www.googleapis.com/drive/v3/files/'+cfg.fileId+'?alt=media')).json(); }
+    catch(e){ cfg.fileId=''; persist(); syncing=false; queueSync(); return; }
+    if(remote && remote.properties && (Number(remote.updatedAt)||0) > (Number(db.updatedAt)||0)){
+      const keep={clientId:cfg.clientId, fileId:cfg.fileId, connected:true, lastSync:Date.now()};
+      db=remote;
+      if(!db.banks) db.banks=[];
+      db.sync=keep;
+      persist(); render();
+    }else{
+      await gFetch('https://www.googleapis.com/upload/drive/v3/files/'+cfg.fileId+'?uploadType=media',
+        {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)});
+      cfg.lastSync=Date.now(); persist();
+    }
+    setSyncMsg('');
+  }catch(e){ setSyncMsg('Sync problem: '+e.message+'. Will retry on next change.'); }
+  syncing=false;
+}
+function tryAutoSync(){
+  const c=syncCfg();
+  if(!c.connected || !c.clientId || location.protocol==='file:') return;
+  if(gsiReady()) ensureToken();
+  else if(gsiTries++<12) setTimeout(tryAutoSync, 700);
+}
+window.addEventListener('online', queueSync);
+
+render();
+tryAutoSync();
+</script>
+</body>
+</html>
